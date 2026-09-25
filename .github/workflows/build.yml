@@ -93,8 +93,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "v0.2.50" --title "真果鉴 / 红果鉴 v0.2.50" --notes "真果鉴（全站源版）与红果鉴（单站源版）多端独立短剧应用安装包" || true
-          gh release upload "v0.2.50" dist/android/* --clobber
+          VERSION=$(python3 -c "import re, pathlib; print(re.search(r'^version:\s*(\S+)', pathlib.Path('pubspec.yaml').read_text(), re.M).group(1).split('+')[0])")
+          TAG="v${VERSION}"
+          gh release create "$TAG" --title "真果鉴 / 红果鉴 $TAG" --notes "真果鉴（全站源版）与红果鉴（单站源版）多端独立短剧应用安装包" || true
+          gh release upload "$TAG" dist/android/* --clobber
       - uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
@@ -133,11 +135,14 @@ jobs:
       - run: choco install ffmpeg --no-progress -y
       - run: python scripts/smoke_windows.py ${{ matrix.arguments }}
       - name: Publish Windows packages to GitHub Release
+        shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "v0.2.50" --title "真果鉴 / 红果鉴 v0.2.50" --notes "真果鉴（全站源版）与红果鉴（单站源版）多端独立短剧应用安装包" || true
-          gh release upload "v0.2.50" dist/windows/* --clobber
+          VERSION=$(python -c "import re, pathlib; print(re.search(r'^version:\s*(\S+)', pathlib.Path('pubspec.yaml').read_text(), re.M).group(1).split('+')[0])")
+          TAG="v${VERSION}"
+          gh release create "$TAG" --title "真果鉴 / 红果鉴 $TAG" --notes "真果鉴（全站源版）与红果鉴（单站源版）多端独立短剧应用安装包" || true
+          gh release upload "$TAG" dist/windows/* --clobber
       - uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
@@ -176,8 +181,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "v0.2.50" --title "真果鉴 / 红果鉴 v0.2.50" --notes "真果鉴（全站源版）与红果鉴（单站源版）多端独立短剧应用安装包" || true
-          gh release upload "v0.2.50" dist/ios/* --clobber
+          VERSION=$(python3 -c "import re, pathlib; print(re.search(r'^version:\s*(\S+)', pathlib.Path('pubspec.yaml').read_text(), re.M).group(1).split('+')[0])")
+          TAG="v${VERSION}"
+          gh release create "$TAG" --title "真果鉴 / 红果鉴 $TAG" --notes "真果鉴（全站源版）与红果鉴（单站源版）多端独立短剧应用安装包" || true
+          gh release upload "$TAG" dist/ios/* --clobber
       - uses: actions/upload-artifact@v4
         continue-on-error: true
         with:

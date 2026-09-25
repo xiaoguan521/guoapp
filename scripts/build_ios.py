@@ -103,9 +103,34 @@ def main():
         for symbol in ['_DuanjuRequest', '_DuanjuFree']:
             if symbol not in symbols:
                 raise SystemExit('iOS 包缺少 FFI 入口：' + symbol)
-        destination = output / f'{variant.slug}-{version}-ios-unsigned-app.zip'
-        run(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(application), str(destination)])
+        frameworks_dir = application / 'Frameworks'
+        if frameworks_dir.exists():
+            for root_dir, dirs, _ in os.walk(frameworks_dir):
+                for d in dirs:
+                    if d.endswith('.framework'):
+                        run(['codesign', '-f', '-s', '-', str(Path(root_dir) / d)])
+        run(['codesign', '-f', '-s', '-', str(application)])
+        pack_dir = root / 'build' / 'ios' / 'ipa-pack'
+        if pack_dir.exists():
+            shutil.rmtree(pack_dir)
+        payload_dir = pack_dir / 'Payload'
+        payload_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(application, payload_dir / 'Runner.app', symlinks=True)
+        for root_dir, dirs, files in os.walk(payload_dir):
+            for d in dirs:
+                os.chmod(os.path.join(root_dir, d), 0o755)
+            for f in files:
+                p = os.path.join(root_dir, f)
+                if not os.path.islink(p):
+                    res = subprocess.run(['file', p], capture_output=True, text=True).stdout
+                    if 'Mach-O' in res or f == 'Runner':
+                        os.chmod(p, 0o755)
+                    else:
+                        os.chmod(p, 0o644)
+        destination = output / f'{variant.slug}-{version}-ios.ipa'
+        run(['zip', '-qry', str(destination), 'Payload'], cwd=pack_dir)
         artifacts.append(destination)
+        shutil.rmtree(pack_dir, ignore_errors=True)
     if not artifacts:
         raise SystemExit('未生成 iOS 安装包。')
     checksums = []
