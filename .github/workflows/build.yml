@@ -74,7 +74,10 @@ jobs:
           flutter-version: '3.47.4'
           channel: stable
           cache: true
-      - run: sdkmanager 'ndk;28.2.13676358'
+      - name: Install Android NDK
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;28.2.13676358"
       - name: Configure Android signing
         run: python scripts/configure_signing.py
         env:
