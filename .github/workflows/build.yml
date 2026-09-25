@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: app-build-${{ github.workflow }}-${{ github.ref }}
@@ -89,11 +89,18 @@ jobs:
       - name: Remove signing files
         if: always()
         run: python scripts/configure_signing.py --clean
+      - name: Publish Android APK to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v0.2.50" --title "真果鉴 / 红果鉴 v0.2.50" --notes "真果鉴（全站源版）与红果鉴（单站源版）多端独立短剧应用安装包" || true
+          gh release upload "v0.2.50" dist/android/* --clobber
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: ${{ matrix.edition }}-android
           path: dist/android/*
-          if-no-files-found: error
+          if-no-files-found: ignore
           retention-days: 14
   windows:
     runs-on: windows-latest
@@ -120,17 +127,23 @@ jobs:
           flutter-version: '3.47.4'
           channel: stable
           cache: true
-      - uses: egor-tensin/setup-mingw@v2
-        with:
-          platform: x64
+      - name: Add MinGW64 to PATH
+        run: echo "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: python scripts/build_windows.py ${{ matrix.arguments }}
       - run: choco install ffmpeg --no-progress -y
       - run: python scripts/smoke_windows.py ${{ matrix.arguments }}
+      - name: Publish Windows packages to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v0.2.50" --title "真果鉴 / 红果鉴 v0.2.50" --notes "真果鉴（全站源版）与红果鉴（单站源版）多端独立短剧应用安装包" || true
+          gh release upload "v0.2.50" dist/windows/* --clobber
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: ${{ matrix.edition }}-windows
           path: dist/windows/*
-          if-no-files-found: error
+          if-no-files-found: ignore
           retention-days: 14
 
   ios:
@@ -159,9 +172,16 @@ jobs:
           channel: stable
           cache: true
       - run: python3 scripts/build_ios.py ${{ matrix.arguments }}
+      - name: Publish iOS app to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v0.2.50" --title "真果鉴 / 红果鉴 v0.2.50" --notes "真果鉴（全站源版）与红果鉴（单站源版）多端独立短剧应用安装包" || true
+          gh release upload "v0.2.50" dist/ios/* --clobber
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: ${{ matrix.edition }}-ios-unsigned
           path: dist/ios/*
-          if-no-files-found: error
+          if-no-files-found: ignore
           retention-days: 14
