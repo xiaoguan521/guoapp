@@ -1,6 +1,8 @@
 name: Temporary Dart format probe
 
 on:
+  push:
+    branches: [codex/format-probe]
   workflow_dispatch:
 
 permissions:
