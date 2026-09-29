@@ -1,0 +1,22 @@
+name: Temporary Dart format probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          channel: stable
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - run: |
+          dart format lib test integration_test test_driver
+          git diff -- lib/catalog_filters.dart lib/danmaku_models.dart lib/downloads_screen.dart lib/remote_widgets.dart lib/settings_screen.dart
