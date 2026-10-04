@@ -76,9 +76,7 @@ class _CatalogFiltersState extends State<CatalogFilters> {
             child: television
                 ? RemoteRow(
                     key: widget.remoteKey,
-                    itemKeys: [
-                      for (final entry in widget.categories) entry.id,
-                    ],
+                    itemKeys: [for (final entry in widget.categories) entry.id],
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     initialIndex: _selectedIndex,
                     autofocus: widget.remoteAutofocus,

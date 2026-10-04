@@ -89,6 +89,63 @@ void main() {
   );
 
   testWidgets(
+    'history supports batch selection and deletion of multiple entries',
+    (tester) async {
+      viewport(tester, const Size(390, 844));
+      final store = await create();
+      final repository = LibraryFeatureRepository();
+      await store.saveWatch(watch(first));
+      await store.saveWatch(watch(second));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SavedLibrary(
+              repository: repository,
+              store: store,
+              history: true,
+              onOpen: (_) {},
+              onContinue: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Click batch select button
+      expect(find.byKey(const ValueKey('select-history')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('select-history')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('已选择 0 项'), findsOneWidget);
+
+      // Select first drama
+      await tester.tap(find.byKey(ValueKey('saved-${first.id}')));
+      await tester.pumpAndSettle();
+      expect(find.text('已选择 1 项'), findsOneWidget);
+
+      // Select all
+      await tester.tap(find.byKey(const ValueKey('history-select-all')));
+      await tester.pumpAndSettle();
+      expect(find.text('已选择 2 项'), findsOneWidget);
+
+      // Tap delete button to open confirm dialog
+      final deleteBtn = find.byKey(const ValueKey('delete-selected-history'));
+      expect(deleteBtn, findsOneWidget);
+      await tester.tap(deleteBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.text('删除 2 条观看记录？'), findsOneWidget);
+      await tester.tap(find.text('删除'));
+      await tester.pumpAndSettle();
+
+      expect(store.history, isEmpty);
+      expect(find.text('还没有观看记录'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
     'follow filters show unread updates until explicitly marked read',
     (tester) async {
       viewport(tester, const Size(390, 844));

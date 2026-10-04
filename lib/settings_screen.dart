@@ -203,8 +203,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     () => widget.store.setExportPosters(!widget.store.exportPosters),
   );
 
-  List<_TelevisionEntry>
-  _televisionEntries() => [
+  List<_TelevisionEntry> _televisionEntries() => [
     (
       id: 'lan',
       icon: Icons.devices_rounded,
@@ -406,7 +405,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ListTile(
                         leading: const Icon(Icons.download_outlined),
                         title: const Text('下载偏好'),
-                        subtitle: Text(widget.store.downloadPreferences.qualityLabel),
+                        subtitle: Text(
+                          widget.store.downloadPreferences.qualityLabel,
+                        ),
                         trailing: const Icon(Icons.chevron_right_rounded),
                         onTap: () => Navigator.push(
                           context,

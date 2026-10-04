@@ -597,18 +597,22 @@ class LocalStore extends ChangeNotifier {
     });
   }
 
-  Future<void> removeHistory(String id) {
+  Future<void> removeHistory(String id) => removeHistories([id]);
+
+  Future<void> removeHistories(Iterable<String> ids) {
     final epoch = _epoch;
+    final idSet = ids.where((id) => watched(id) != null).toSet();
     return _queue(() async {
-      if (watched(id) == null || epoch != _epoch) return;
-      final entries = Map.of(_history)..remove(id);
+      if (idSet.isEmpty || epoch != _epoch) return;
+      final entries = Map.of(_history);
+      entries.removeWhere((key, _) => idSet.contains(key));
       await _commit(
         {
           _key('history'): jsonEncode(
             entries.values.map((entry) => entry.toJson()).toList(),
           ),
         },
-        clearSyncProgress: {id},
+        clearSyncProgress: idSet,
       );
       _loadLibrary();
       _notify();

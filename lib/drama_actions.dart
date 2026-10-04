@@ -12,6 +12,7 @@ Future<void> showDramaActions(
   VoidCallback? onContinue,
   VoidCallback? onDownload,
   VoidCallback? onSelect,
+  VoidCallback? onSelectHistory,
   bool history = false,
 }) async {
   final epoch = store.profileEpoch;
@@ -36,8 +37,11 @@ Future<void> showDramaActions(
       ('download', '下载选集', Icons.download_outlined),
     if (onSelect != null && store.canDownload)
       ('select', '多选下载', Icons.checklist_rounded),
-    if (history && store.watched(drama.id) != null)
+    if (history && store.watched(drama.id) != null) ...[
+      if (onSelectHistory != null)
+        ('selectHistory', '多选删除', Icons.checklist_rounded),
       ('removeHistory', '删除这条观看记录', Icons.history_toggle_off),
+    ],
   ];
   final choice = await showDialog<String>(
     context: context,
@@ -91,6 +95,8 @@ Future<void> showDramaActions(
       if (store.canDownload) onDownload?.call();
     case 'select':
       if (store.canDownload) onSelect?.call();
+    case 'selectHistory':
+      onSelectHistory?.call();
     case 'removeHistory':
       await saveUserChange(context, () => store.removeHistory(drama.id));
   }
