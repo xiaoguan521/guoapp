@@ -4,7 +4,6 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import 'app_layout.dart';
@@ -633,6 +632,39 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
     }
   }
 
+  void _showExportProgressDialog(MediaLibrary library) {
+    if (!mounted) return;
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AnimatedBuilder(
+          animation: library,
+          builder: (context, _) => AlertDialog(
+            title: const Text('正在导出'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                LinearProgressIndicator(
+                  value: library.progress > 0 ? library.progress : null,
+                ),
+                const SizedBox(height: 12),
+                Text(library.status),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => unawaited(library.cancel()),
+                child: const Text('停止'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _exportCollectionFiles(DownloadCollection collection) async {
     final library = MediaLibrary.current;
     if (library == null) {
@@ -689,35 +721,7 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
       if (confirmed != true || !mounted) return;
       break;
     }
-    unawaited(
-      showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AnimatedBuilder(
-          animation: library,
-          builder: (context, _) => AlertDialog(
-            title: const Text('正在导出'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                LinearProgressIndicator(
-                  value: library.progress > 0 ? library.progress : null,
-                ),
-                const SizedBox(height: 12),
-                Text(library.status),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => unawaited(library.cancel()),
-                child: const Text('停止'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    _showExportProgressDialog(library);
     try {
       final result = await library.exportJobsToDirectory(jobs, directory);
       if (mounted) {

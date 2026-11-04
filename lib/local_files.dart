@@ -122,7 +122,7 @@ class LocalFilesState {
       if (key == 'profiles' && value is List) {
         values[key] = jsonEncode(value);
       } else if (value is String || value is bool) {
-        values[key] = value;
+        values[key] = value as Object;
       }
     }
     final settings = await _readOptional(files, _settingsFile);

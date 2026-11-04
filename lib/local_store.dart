@@ -68,7 +68,7 @@ class LocalStore extends ChangeNotifier {
     try {
       _snapshot ??= _files == null
           ? LocalSnapshot(preferences)
-          : LocalSnapshot.fromValues(preferences, _files!.values);
+          : LocalSnapshot.fromValues(preferences, _files.values);
       final raw = _snapshot!.getString('profiles');
       if (raw == null &&
           (_snapshot!.getString('activeProfile') != null ||
@@ -450,7 +450,7 @@ class LocalStore extends ChangeNotifier {
     );
     values.putIfAbsent('activeProfile', () => _current);
     try {
-      if (_files != null) await _files!.commit(values);
+      if (_files != null) await _files.commit(values);
       await snapshot.commit(values);
       if (trackSync &&
           !replace &&
@@ -1278,8 +1278,8 @@ class LocalStore extends ChangeNotifier {
     final previousLocked = locked;
     await preferences.reload();
     if (_files != null) {
-      await _files!.reload();
-      _snapshot = LocalSnapshot.fromValues(preferences, _files!.values);
+      await _files.reload();
+      _snapshot = LocalSnapshot.fromValues(preferences, _files.values);
     } else {
       _snapshot = LocalSnapshot(preferences);
     }
