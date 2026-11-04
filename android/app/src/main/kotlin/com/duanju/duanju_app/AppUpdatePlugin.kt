@@ -68,8 +68,8 @@ class AppUpdatePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             "openReleasePage" -> {
                 try {
                     val uri = Uri.parse(call.argument<String>("url"))
-                    require(uri.scheme == "https" && uri.host == "github.com" &&
-                        uri.path == "/xiaoguan521/guoapp/releases")
+                    val allowedHost = call.argument<String>("host").orEmpty()
+                    require(uri.scheme == "https" && uri.host == allowedHost && allowedHost.isNotEmpty())
                     context.startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                     result.success(null)
                 } catch (_: Exception) {

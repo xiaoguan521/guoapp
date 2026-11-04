@@ -8,12 +8,12 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as paths;
 import 'package:path_provider/path_provider.dart';
 
+import 'app_build.dart';
 import 'core_bridge.dart';
 import 'local_store.dart';
 import 'media_library.dart';
 import 'app_layout.dart';
 
-const _releasePage = 'https://github.com/xiaoguan521/guoapp/releases';
 const _updateChannel = MethodChannel('duanju/update');
 
 class _Version implements Comparable<_Version> {
@@ -101,11 +101,19 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
   bool _trusted(Uri uri, {bool metadata = false}) {
     if (uri.scheme != 'https' || uri.userInfo.isNotEmpty || uri.port != 443)
       return false;
-    if (metadata) return uri.host == 'api.github.com';
-    return uri.host == 'release-assets.githubusercontent.com' ||
-        uri.host == 'objects.githubusercontent.com' ||
-        (uri.host == 'github.com' &&
-            uri.path.startsWith('/xiaoguan521/guoapp/releases/download/'));
+    final allowed = updateAllowedHosts
+        .split(',')
+        .map((h) => h.trim())
+        .where((h) => h.isNotEmpty)
+        .toSet();
+    final metadataHost = Uri.tryParse(updateMetadataUrl)?.host ?? '';
+    if (metadata) return uri.host == metadataHost && allowed.contains(uri.host);
+    if (!allowed.contains(uri.host)) return false;
+    if (updateDownloadPathPrefix.isNotEmpty) {
+      if (uri.path.startsWith(updateDownloadPathPrefix)) return true;
+      if (uri.host == metadataHost) return false;
+    }
+    return true;
   }
 
   Future<HttpClientResponse> _get(Uri uri, {bool metadata = false}) async {
@@ -164,12 +172,7 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
       final abis = Platform.isAndroid
           ? (info?['abis'] as List? ?? const []).whereType<String>().toList()
           : <String>[if (Platform.isWindows) 'windows-x64'];
-      final response = await _get(
-        Uri.https('api.github.com', '/repos/xiaoguan521/guoapp/releases', {
-          'per_page': '30',
-        }),
-        metadata: true,
-      );
+      final response = await _get(Uri.parse(updateMetadataUrl), metadata: true);
       final body = <int>[];
       await for (final chunk in response.timeout(const Duration(seconds: 25))) {
         body.addAll(chunk);
@@ -362,14 +365,15 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
   Future<void> _openPage() async {
     try {
       if (Platform.isWindows) {
-        await Process.start('explorer.exe', [_releasePage]);
+        await Process.start('explorer.exe', [updateReleasePage]);
       } else {
         await _updateChannel.invokeMethod<void>('openReleasePage', {
-          'url': _releasePage,
+          'url': updateReleasePage,
+          'host': Uri.tryParse(updateReleasePage)?.host ?? '',
         });
       }
     } catch (_) {
-      await Clipboard.setData(const ClipboardData(text: _releasePage));
+      await Clipboard.setData(ClipboardData(text: updateReleasePage));
       if (mounted) setState(() => _status = '官方下载页地址已复制，请在浏览器中打开。');
     }
   }
@@ -452,7 +456,7 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
             ),
             const SizedBox(height: 12),
             const Text(
-              '仅在你点击检查或下载时连接本项目 GitHub 发布页。Android 安装前核对文件摘要、应用签名和版本，不自动安装。Windows 和 iOS 通过发布页手动安装。',
+              '仅在你点击检查或下载时连接官方发布渠道。Android 安装前核对文件摘要、应用签名和版本，不自动安装。Windows 和 iOS 通过发布页手动安装。',
             ),
           ],
         ),
