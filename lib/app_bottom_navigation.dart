@@ -11,7 +11,7 @@ class AppBottomNavigation extends StatelessWidget {
     required this.destinations,
   });
 
-  final int selectedIndex;
+  final int? selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final List<NavigationDestination> destinations;
 

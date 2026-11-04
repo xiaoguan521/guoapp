@@ -8,7 +8,7 @@ import 'app_theme.dart';
 
 export 'app_build.dart';
 
-const appVersion = '0.2.164';
+const appVersion = '0.2.166';
 
 ThemeData? _televisionThemeLight;
 ThemeData? _televisionThemeDark;

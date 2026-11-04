@@ -17,6 +17,7 @@ import 'catalog_sort.dart';
 import 'catalog_sort_sheet.dart';
 import 'catalog_view_cache.dart';
 import 'feeds_screen.dart';
+import 'form_text_field.dart';
 import 'recommendation_service.dart';
 import 'recommendations_screen.dart';
 import 'rankings_screen.dart';
@@ -56,8 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
   static const _tabDiscover = 0;
   static const _tabFeed = 1;
   static const _tabFollow = 2;
-  static const _tabLive = 3;
-  static const _tabDownloads = 4;
+  static const _tabHistory = 3;
+  static const _tabLive = 4;
+  static const _tabDownloads = 5;
   final _search = TextEditingController();
   final _scroll = ScrollController();
   final _prefetch = CatalogPrefetchScheduler();
@@ -416,6 +418,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 widget.store.sources.isNotEmpty &&
                 !_group.sources.any((source) => _updater.busy(source.id)),
           ),
+        const GlassMenuEntry(
+          value: 'follow',
+          label: Text('追剧'),
+          leading: Icon(Icons.bookmark_rounded),
+        ),
         if (widget.repository.supportsSourceManagement)
           const GlassMenuEntry(
             value: 'sources',
@@ -451,6 +458,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (action == null || !mounted) return;
     if (action == 'update') {
       _refreshCatalog();
+    } else if (action == 'follow') {
+      _changeTab(_tabFollow);
     } else if (action == 'sources') {
       _manageSources();
     } else if (action == 'users') {
@@ -1119,7 +1128,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final navEntries = <(int, IconData, String)>[
           (_tabDiscover, Icons.home_rounded, '主页'),
           (_tabFeed, Icons.play_circle_rounded, '在看'),
-          (_tabFollow, Icons.bookmark_rounded, '追剧'),
+          (_tabHistory, Icons.history_rounded, '历史'),
           if (widget.store.canShowLive) (_tabLive, Icons.live_tv_rounded, '直播'),
           if (widget.store.canDownload)
             (_tabDownloads, Icons.download_rounded, '下载'),
@@ -1127,7 +1136,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final tabIndexes = [for (final entry in navEntries) entry.$1];
         final selectedTabIndex = tabIndexes.contains(_tab)
             ? tabIndexes.indexOf(_tab)
-            : 0;
+            : null;
         final glass =
             widget.store.interfaceStyle == 'glass' && !desktop && !television;
         final bottomBarHidden =
@@ -1148,9 +1157,9 @@ class _HomeScreenState extends State<HomeScreen> {
             label: '在看',
           ),
           NavigationDestination(
-            icon: Icon(Icons.bookmark_border_rounded),
-            selectedIcon: Icon(Icons.bookmark_rounded),
-            label: '追剧',
+            icon: Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history_rounded),
+            label: '历史',
           ),
           if (widget.store.canShowLive)
             NavigationDestination(
@@ -1237,6 +1246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 : Text(switch (_tab) {
                     _tabFeed => '在看',
                     _tabFollow => '追剧',
+                    _tabHistory => '历史',
                     _tabLive => '直播',
                     _tabDownloads => '下载',
                     _ => appEditionName(widget.store.fullMode),
@@ -1395,9 +1405,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         label: Text('在看'),
                       ),
                       NavigationRailDestination(
-                        icon: Icon(Icons.bookmark_border_rounded),
-                        selectedIcon: Icon(Icons.bookmark_rounded),
-                        label: Text('追剧'),
+                        icon: Icon(Icons.history_outlined),
+                        selectedIcon: Icon(Icons.history_rounded),
+                        label: Text('历史'),
                       ),
                       if (widget.store.canShowLive)
                         NavigationRailDestination(
@@ -1466,8 +1476,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               key: ValueKey('saved-tab-$_tab'),
                               repository: widget.repository,
                               store: widget.store,
-                              history: false,
-                              historyToggle: true,
+                              history: _tab == _tabHistory,
+                              historyToggle: false,
                               remoteAutofocus: television,
                               onExitLeft: television
                                   ? () => _navKey.currentState?.focusCurrent()
@@ -2040,31 +2050,28 @@ class _AboutDialogState extends State<_AboutDialog> {
                 ),
               const SizedBox(height: 8),
               const Text('独立运行，打开即可浏览和播放。观看记录与追剧收藏保存在当前设备。'),
-              if (!allSourcesEnabled) ...[
-                const SizedBox(height: 16),
-                if (widget.store.liveActivated)
-                  const Text('直播已激活')
-                else ...[
-                  TextField(
-                    key: const ValueKey('about-live-code'),
-                    controller: _liveCode,
-                    textInputAction: TextInputAction.done,
-                    decoration: InputDecoration(
-                      labelText: '直播激活码',
-                      errorText: _liveCodeError,
-                    ),
-                    onSubmitted: (_) => _activateLive(),
+              const SizedBox(height: 16),
+              if (widget.store.liveActivated)
+                const Text('直播已激活')
+              else ...[
+                FormTextField(
+                  key: const ValueKey('about-live-code'),
+                  controller: _liveCode,
+                  decoration: InputDecoration(
+                    labelText: '直播激活码',
+                    errorText: _liveCodeError,
                   ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: OutlinedButton(
-                      key: const ValueKey('about-live-activate'),
-                      onPressed: _activateLive,
-                      child: const Text('激活直播'),
-                    ),
+                  onSubmitted: (_) => _activateLive(),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: OutlinedButton(
+                    key: const ValueKey('about-live-activate'),
+                    onPressed: _activateLive,
+                    child: const Text('激活直播'),
                   ),
-                ],
+                ),
               ],
               const SizedBox(height: 12),
               OutlinedButton.icon(

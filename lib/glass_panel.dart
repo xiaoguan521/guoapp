@@ -535,7 +535,7 @@ class GlassBottomNavigation extends StatelessWidget {
   static const bottomMargin = 12.0;
   static const contentInset = height + bottomMargin + 8;
 
-  final int selectedIndex;
+  final int? selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final List<NavigationDestination> destinations;
 
