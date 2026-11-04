@@ -1,7 +1,11 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import 'app_layout.dart';
+import 'native_text_input.dart';
 
 class SearchInput extends StatefulWidget {
   const SearchInput({
@@ -31,6 +35,7 @@ class _SearchInputState extends State<SearchInput> {
   Completer<Iterable<String>>? _pending;
   int _generation = 0;
   bool _selected = false;
+  bool _editing = false;
   final _cache = <String, List<String>>{};
 
   void _cancel() {
@@ -51,6 +56,7 @@ class _SearchInputState extends State<SearchInput> {
   @override
   void dispose() {
     _cancel();
+    if (_editing) NativeTextInput.stop();
     _focus.dispose();
     super.dispose();
   }
@@ -94,6 +100,57 @@ class _SearchInputState extends State<SearchInput> {
     widget.onSearch(value.trim());
   }
 
+  void _editOnTelevision() {
+    if (_editing) return;
+    setState(() => _editing = true);
+    NativeTextInput.start(
+      widget.controller.text,
+      onChanged: (text) {
+        if (!mounted) return;
+        widget.controller.value = TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        );
+        widget.onChanged?.call(text);
+      },
+      onDone: (text, submit) {
+        if (!mounted) return;
+        setState(() => _editing = false);
+        widget.controller.value = TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        );
+        widget.onChanged?.call(text);
+        if (submit) _submit(text);
+      },
+    );
+  }
+
+  Widget _televisionField(BuildContext context) => ListenableBuilder(
+    listenable: Listenable.merge([widget.controller, _focus]),
+    builder: (context, _) => InkWell(
+      focusNode: _focus,
+      autofocus: widget.autofocus,
+      focusColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      onTap: _editOnTelevision,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          hintText: widget.hint,
+          prefixIcon: const Icon(Icons.search_rounded),
+        ),
+        isFocused: _focus.hasFocus,
+        isEmpty: widget.controller.text.isEmpty,
+        child: Text(
+          widget.controller.text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
+      ),
+    ),
+  );
+
   Widget _highlight(String value) {
     final query = widget.controller.text.trim().toLowerCase();
     final spans = <TextSpan>[];
@@ -124,88 +181,95 @@ class _SearchInputState extends State<SearchInput> {
   }
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) => RawAutocomplete<String>(
-      textEditingController: widget.controller,
-      focusNode: _focus,
-      optionsBuilder: _options,
-      onSelected: (value) {
-        _selected = true;
-        _submit(value);
-      },
-      fieldViewBuilder: (context, controller, focus, submitted) => TextField(
-        controller: controller,
-        focusNode: focus,
-        autofocus: widget.autofocus,
-        textInputAction: TextInputAction.search,
-        onChanged: (value) {
-          widget.onChanged?.call(value);
-          setState(() {});
+  Widget build(BuildContext context) {
+    if (AppLayout.isTelevision(context) &&
+        defaultTargetPlatform == TargetPlatform.android) {
+      return _televisionField(context);
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) => RawAutocomplete<String>(
+        textEditingController: widget.controller,
+        focusNode: _focus,
+        optionsBuilder: _options,
+        onSelected: (value) {
+          _selected = true;
+          _submit(value);
         },
-        onSubmitted: (value) {
-          _selected = false;
-          submitted();
-          if (!_selected) _submit(value);
-        },
-        decoration: InputDecoration(
-          hintText: widget.hint,
-          prefixIcon: const Icon(Icons.search_rounded),
-          suffixIcon: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (controller.text.isNotEmpty)
+        fieldViewBuilder: (context, controller, focus, submitted) => TextField(
+          controller: controller,
+          focusNode: focus,
+          autofocus: widget.autofocus,
+          textInputAction: TextInputAction.search,
+          onChanged: (value) {
+            widget.onChanged?.call(value);
+            setState(() {});
+          },
+          onSubmitted: (value) {
+            _selected = false;
+            submitted();
+            if (!_selected) _submit(value);
+          },
+          decoration: InputDecoration(
+            hintText: widget.hint,
+            prefixIcon: const Icon(Icons.search_rounded),
+            suffixIcon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (controller.text.isNotEmpty)
+                  IconButton(
+                    tooltip: '清空搜索',
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () {
+                      _cancel();
+                      controller.clear();
+                      widget.onChanged?.call('');
+                      setState(() {});
+                    },
+                  ),
                 IconButton(
-                  tooltip: '清空搜索',
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () {
-                    _cancel();
-                    controller.clear();
-                    widget.onChanged?.call('');
-                    setState(() {});
-                  },
+                  tooltip: '搜索',
+                  icon: const Icon(Icons.arrow_forward_rounded),
+                  onPressed: () => _submit(controller.text),
                 ),
-              IconButton(
-                tooltip: '搜索',
-                icon: const Icon(Icons.arrow_forward_rounded),
-                onPressed: () => _submit(controller.text),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-      optionsViewBuilder: (context, selected, options) {
-        final values = options.toList();
-        final available =
-            MediaQuery.sizeOf(context).height -
-            MediaQuery.viewInsetsOf(context).bottom;
-        return Align(
-          alignment: Alignment.topLeft,
-          child: Material(
-            elevation: 8,
-            borderRadius: BorderRadius.circular(14),
-            clipBehavior: Clip.antiAlias,
-            child: SizedBox(
-              width: constraints.maxWidth,
-              height: min(
-                min(300.0, max(96.0, available * .45)),
-                values.length * 48.0,
-              ),
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemExtent: 48,
-                itemCount: values.length,
-                itemBuilder: (context, index) => ListTile(
-                  key: ValueKey('search-suggestion-$index'),
-                  selected: AutocompleteHighlightedOption.of(context) == index,
-                  leading: const Icon(Icons.search, size: 18),
-                  title: _highlight(values[index]),
-                  onTap: () => selected(values[index]),
+        optionsViewBuilder: (context, selected, options) {
+          final values = options.toList();
+          final available =
+              MediaQuery.sizeOf(context).height -
+              MediaQuery.viewInsetsOf(context).bottom;
+          return Align(
+            alignment: Alignment.topLeft,
+            child: Material(
+              elevation: 8,
+              borderRadius: BorderRadius.circular(14),
+              clipBehavior: Clip.antiAlias,
+              child: SizedBox(
+                width: constraints.maxWidth,
+                height: min(
+                  min(300.0, max(96.0, available * .45)),
+                  values.length * 48.0,
+                ),
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemExtent: 48,
+                  itemCount: values.length,
+                  itemBuilder: (context, index) => ListTile(
+                    key: ValueKey('search-suggestion-$index'),
+                    selected:
+                        AutocompleteHighlightedOption.of(context) == index,
+                    leading: const Icon(Icons.search, size: 18),
+                    title: _highlight(values[index]),
+                    onTap: () => selected(values[index]),
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-      },
-    ),
-  );
+          );
+        },
+      ),
+    );
+  }
 }

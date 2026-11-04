@@ -8,6 +8,7 @@ import 'local_store.dart';
 import 'resource_settings.dart';
 import 'remote_widgets.dart';
 import 'widgets.dart';
+import 'form_text_field.dart';
 
 class DownloadPreferencesScreen extends StatelessWidget {
   const DownloadPreferencesScreen({super.key, required this.store});
@@ -89,7 +90,7 @@ class _ResourceSettingsScreenState extends State<ResourceSettingsScreen> {
   ResourceSettings? _settings;
   String _mode = 'auto';
   int _catalog = 3, _interval = 250, _downloads = 2;
-  bool _folders = false, _busy = false, _showProxy = false;
+  bool _folders = false, _busy = false;
   String? _error;
   bool get _allowed =>
       widget.store.profileEpoch == _epoch &&
@@ -223,26 +224,14 @@ class _ResourceSettingsScreenState extends State<ResourceSettingsScreen> {
                   if (_mode == 'manual')
                     Padding(
                       padding: const EdgeInsets.only(top: 16),
-                      child: TextField(
+                      child: FormTextField(
                         controller: _proxy,
-                        obscureText: !_showProxy,
-                        enableSuggestions: false,
-                        autocorrect: false,
-                        decoration: InputDecoration(
+                        url: true,
+                        decoration: const InputDecoration(
                           labelText: '代理地址',
                           hintText: 'http://127.0.0.1:7890',
                           helperText: '支持 HTTP、HTTPS、SOCKS5；仅保存在本机，不进入配置备份。',
                           helperMaxLines: 3,
-                          suffixIcon: IconButton(
-                            tooltip: _showProxy ? '隐藏代理地址' : '显示代理地址',
-                            onPressed: () =>
-                                setState(() => _showProxy = !_showProxy),
-                            icon: Icon(
-                              _showProxy
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                            ),
-                          ),
                         ),
                       ),
                     ),

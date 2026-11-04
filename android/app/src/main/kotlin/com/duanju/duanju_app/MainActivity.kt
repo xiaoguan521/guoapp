@@ -30,6 +30,7 @@ class MainActivity : FlutterActivity() {
     private var headroomReadAt = 0L
     private var thermalHeadroom: Double? = null
     private var deviceChannel: MethodChannel? = null
+    private var textInputBridge: TextInputBridge? = null
     private var televisionMode = false
     private var pictureInPictureAutoEnter = false
     private var pictureInPictureAspectWidth = 1600
@@ -173,6 +174,7 @@ class MainActivity : FlutterActivity() {
         flutterEngine.plugins.add(VideoSurfacePlugin())
         flutterEngine.plugins.add(StorageDocumentsPlugin())
         flutterEngine.plugins.add(AppUpdatePlugin())
+        textInputBridge = TextInputBridge(this, flutterEngine.dartExecutor.binaryMessenger)
         deviceChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "duanju/device")
             .also { channel ->
                 channel.setMethodCallHandler { call, result ->
@@ -244,6 +246,12 @@ class MainActivity : FlutterActivity() {
                     }
                 }
             }
+    }
+
+    override fun onDestroy() {
+        textInputBridge?.dispose()
+        textInputBridge = null
+        super.onDestroy()
     }
 
     private fun pictureInPictureSupported(): Boolean {

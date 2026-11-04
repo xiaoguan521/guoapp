@@ -11,6 +11,7 @@ import 'models.dart';
 import 'app_build.dart';
 import 'library_transfer_actions.dart';
 import 'remote_widgets.dart';
+import 'form_text_field.dart';
 
 class ProfilesScreen extends StatefulWidget {
   const ProfilesScreen({
@@ -345,10 +346,10 @@ class _PasswordDialogState extends State<_PasswordDialog> {
   @override
   Widget build(BuildContext context) => AlertDialog(
     title: Text('登录 ${widget.name}'),
-    content: TextField(
+    content: FormTextField(
       controller: _pin,
       autofocus: true,
-      obscureText: true,
+      obscure: true,
       decoration: const InputDecoration(labelText: '密码'),
       onSubmitted: (value) => Navigator.pop(context, value),
     ),
@@ -452,24 +453,24 @@ class _ProfileEditorState extends State<ProfileEditor> {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            TextField(
+            FormTextField(
               controller: _name,
               maxLength: 40,
               decoration: const InputDecoration(labelText: '用户名'),
             ),
             const SizedBox(height: 12),
-            TextField(
+            FormTextField(
               controller: _pin,
-              obscureText: true,
+              obscure: true,
               decoration: const InputDecoration(
                 labelText: '设置密码（至少 6 位）',
                 helperText: '留空保留原密码',
               ),
             ),
             const SizedBox(height: 12),
-            TextField(
+            FormTextField(
               controller: _confirm,
-              obscureText: true,
+              obscure: true,
               decoration: const InputDecoration(labelText: '再次输入密码'),
             ),
             if (widget.profile?.protected == true &&

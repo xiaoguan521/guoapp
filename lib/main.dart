@@ -17,6 +17,7 @@ import 'home_screen.dart';
 import 'hongguo_licenses.dart';
 import 'launcher_icon.dart';
 import 'local_store.dart';
+import 'window_frame.dart';
 import 'profiles_screen.dart';
 import 'media_library.dart';
 import 'package_smoke.dart';
@@ -36,6 +37,7 @@ Future<void> main(List<String> arguments) async {
   }
   if (Platform.isWindows) {
     await windowManager.ensureInitialized();
+    await restoreWindowFrame();
   }
   MediaKit.ensureInitialized();
   VideoEnhancementAssets.registerLicenses();
@@ -127,10 +129,11 @@ class _AppBootstrapState extends State<AppBootstrap>
       RecommendationService.current = RecommendationService(preferences);
       await _refreshDevice();
       await repository.initialize();
-      await LauncherIcon.apply(LocalStore(preferences).fullMode);
+      final localStore = await LocalStore.open(preferences);
+      await LauncherIcon.apply(localStore.fullMode);
       if (mounted) {
         setState(() {
-          store = LocalStore(preferences);
+          store = localStore;
           repository.access = store;
           MediaLibrary.attach(repository, store!);
           LanController.current?.dispose();
@@ -181,6 +184,8 @@ class _AppBootstrapState extends State<AppBootstrap>
             );
           };
         });
+      } else {
+        localStore.dispose();
       }
     } catch (failure) {
       if (mounted) {

@@ -9,6 +9,8 @@ class LocalSnapshot {
     reloadValues();
   }
   LocalSnapshot.empty(this.preferences);
+  LocalSnapshot.fromValues(this.preferences, Map<String, Object> values)
+    : _values = Map.of(values);
 
   static const storageKey = 'localSnapshot.v1';
   static const libraryKeys = {

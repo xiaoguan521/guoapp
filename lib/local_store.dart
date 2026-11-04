@@ -8,6 +8,7 @@ import 'launcher_icon.dart';
 import 'local_profiles.dart';
 import 'watch_stats.dart';
 import 'local_snapshot.dart';
+import 'local_files.dart';
 import 'models.dart';
 import 'playback_preferences.dart';
 import 'download_preferences.dart';
@@ -23,11 +24,23 @@ class LibraryChanges extends ChangeNotifier {
 }
 
 class LocalStore extends ChangeNotifier {
-  LocalStore(this.preferences) {
+  LocalStore(this.preferences) : _files = null {
     _initialize();
   }
 
+  LocalStore._withFiles(this.preferences, this._files) {
+    _snapshot = LocalSnapshot.fromValues(preferences, _files!.values);
+    _initialize();
+  }
+
+  static Future<LocalStore> open(SharedPreferences preferences) async =>
+      LocalStore._withFiles(
+        preferences,
+        await LocalFilesState.open(preferences),
+      );
+
   final SharedPreferences preferences;
+  final LocalFilesState? _files;
   LocalSnapshot? _snapshot;
   final LibraryChanges _libraryChanges = LibraryChanges();
   Listenable get libraryChanges => _libraryChanges;
@@ -53,7 +66,9 @@ class LocalStore extends ChangeNotifier {
 
   void _initialize() {
     try {
-      _snapshot = LocalSnapshot(preferences);
+      _snapshot ??= _files == null
+          ? LocalSnapshot(preferences)
+          : LocalSnapshot.fromValues(preferences, _files!.values);
       final raw = _snapshot!.getString('profiles');
       if (raw == null &&
           (_snapshot!.getString('activeProfile') != null ||
@@ -435,6 +450,7 @@ class LocalStore extends ChangeNotifier {
     );
     values.putIfAbsent('activeProfile', () => _current);
     try {
+      if (_files != null) await _files!.commit(values);
       await snapshot.commit(values);
       if (trackSync &&
           !replace &&
@@ -1261,6 +1277,12 @@ class LocalStore extends ChangeNotifier {
     final previousId = _current;
     final previousLocked = locked;
     await preferences.reload();
+    if (_files != null) {
+      await _files!.reload();
+      _snapshot = LocalSnapshot.fromValues(preferences, _files!.values);
+    } else {
+      _snapshot = LocalSnapshot(preferences);
+    }
     _initialize();
     if (_configurationError == null &&
         previousProfiles == _string('profiles') &&

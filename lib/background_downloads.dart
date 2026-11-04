@@ -74,7 +74,7 @@ class DownloadTaskHandler extends TaskHandler {
     await repository.initialize();
     library = MediaLibrary(
       repository,
-      LocalStore(await SharedPreferences.getInstance()),
+      await LocalStore.open(await SharedPreferences.getInstance()),
       automaticWorker: true,
     );
     await _update();
